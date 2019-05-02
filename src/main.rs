@@ -25,7 +25,7 @@ fn benchmark(strategies : &mut Vec<Box<Strategy>>, depth : usize, len : usize) {
             let ref mut strategy = strategies[i];
             strategy.build(&tree);
             let output = strategy.reduce();
-            assert_eq!(value, output.expect("Invalid u64 value."));
+            //assert_eq!(value, output.expect("Invalid u64 value."));
             let now = Instant::now();
             for _ in 0..measure {
                 strategy.build(&tree);
@@ -36,9 +36,10 @@ fn benchmark(strategies : &mut Vec<Box<Strategy>>, depth : usize, len : usize) {
                 + time.subsec_nanos() as f64 * 1e-9) / (measure as f64);
         }
     }
+    println!("len: {}, depth: {}", len, depth);
     for i in 0..strategies.len() {
         averages[i] /= sample as f64;
-        println!("{}: {}s", strategies[i].name(), averages[i]);
+        println!("{}: {}ms", strategies[i].name(), averages[i] * 1000.0);
     }
 }
 
@@ -46,5 +47,13 @@ fn main() {
     let mut strategies : Vec<Box<Strategy>> = vec![];
     strategies.push(Box::new(Tree::Var(0)));
     strategies.push(Box::new(Machine::new()));
+    benchmark(&mut strategies, 1, 1);
     benchmark(&mut strategies, 1, 3);
+    benchmark(&mut strategies, 1, 5);
+    benchmark(&mut strategies, 1, 10);
+    benchmark(&mut strategies, 1, 15);
+    benchmark(&mut strategies, 1, 20);
+    benchmark(&mut strategies, 2, 3);
+    benchmark(&mut strategies, 2, 5);
+    benchmark(&mut strategies, 2, 10);
 }

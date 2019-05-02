@@ -26,7 +26,8 @@ type Continuations = Vec<Frame>;
 
 #[derive(Debug, Clone)]
 pub struct Machine {
-    code : (Tree, Environment),
+    fresh : usize,
+    code : (Tree, Option<Environment>),
     env : Environment,
     cc : Continuations,
     done : bool
@@ -35,7 +36,8 @@ pub struct Machine {
 impl Machine {
     pub fn new() -> Machine {
         Machine {
-            code: (Tree::Var(0), Environment::new()),
+            fresh: 0,
+            code: (Tree::Var(0), None),
             env: Environment::new(),
             cc: vec![],
             done: false
@@ -43,52 +45,72 @@ impl Machine {
     }
 
     fn transition(machine : Machine) -> Machine {
+        let mut fresh = machine.fresh;
         let code = machine.code;
         let env = machine.env;
         let mut cc = machine.cc;
 
         match code {
-            (Tree::App(left, right), e1) => {
+            (Tree::App(left, right), _) => {
                 cc.push(Frame::Argument(*right, env.clone()));
                 Machine {
-                    code: (*left, e1),
-                    env: env,
-                    cc: cc,
+                    fresh,
+                    code: (*left, None),
+                    env,
+                    cc,
                     done: false
                 }
             },
-            (Tree::Abs(id, body), e1) => {
+            (Tree::Abs(id, body), None) => {
+                Machine {
+                    fresh,
+                    code: (Tree::Abs(id, body), Some(env.clone())),
+                    env,
+                    cc,
+                    done: false
+                }
+            },
+            (Tree::Abs(id, mut body), Some(e1)) => {
                 if let Some(k) = cc.pop() {
                     match k {
                         Frame::Closure(t, mut e2) => {
-                            if let Tree::Abs(id, b) = t {
-                                e2.map.insert(id, (Tree::Abs(id, body), Box::new(e1)));
+                            if let Tree::Abs(x, mut b) = t {
+                                if e2.map.contains_key(&x) {
+                                    fresh += 1;
+                                    b.rename(x, fresh);
+                                    body.rename(x, fresh);
+                                    e2.map.insert(fresh, (Tree::Abs(id, body), Box::new(e1)));
+                                } else {
+                                    e2.map.insert(x, (Tree::Abs(id, body), Box::new(e1)));
+                                }
                                 Machine {
-                                    code: (*b, Environment::new()),
+                                    fresh,
+                                    code: (*b, None),
                                     env: e2,
                                     cc: cc,
                                     done: false
                                 }
                             } else {
-                                println!("{:?}", t);
                                 panic!("Impossible machine state.");
                             }
                         },
-                        Frame::Argument(t, e2) => {
+                        Frame::Argument(m, e2) => {
                             cc.push(Frame::Closure(Tree::Abs(id, body), e1));
                             Machine {
-                                code: (t, Environment::new()),
+                                fresh,
+                                code: (m, None),
                                 env: e2,
-                                cc: cc,
+                                cc,
                                 done: false
                             }
                         }
                     }
                 } else {
                     Machine {
-                        code: (Tree::Abs(id, body), e1.clone()),
+                        fresh,
+                        code: (Tree::Abs(id, body), Some(e1.clone())),
                         env: e1,
-                        cc: cc,
+                        cc,
                         done: true
                     }
                 }
@@ -96,9 +118,10 @@ impl Machine {
             (Tree::Var(v), _) => {
                 let e2 = env.map.get(&v).expect("Impossible machine state.").clone();
                 Machine {
-                    code: (e2.0, *e2.1),
-                    env: env,
-                    cc: cc,
+                    fresh,
+                    code: (e2.0, Some(*e2.1)),
+                    env,
+                    cc,
                     done: false
                 }
             }
@@ -116,11 +139,13 @@ impl Machine {
 
 impl Strategy for Machine {
     fn build(&mut self, tree : &Tree) {
-        self.code = (tree.clone(), Environment::new());
+        self.fresh = Tree::find_largest_var(tree);
+        self.code = (tree.clone(), None);
     }
 
     fn reduce(&mut self) -> Option<u64> {
         *self = Machine::reduce(self.clone());
+        //println!("{:?}", self);
         self.code.0.convert()
     }
 

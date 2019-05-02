@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 
 #[derive(Debug, Clone)]
 pub enum Tree {
@@ -31,6 +33,36 @@ impl Tree {
             }
         }
         result
+    }
+
+    pub fn find_largest_var(tree : &Tree) -> usize {
+        use Tree::*;
+        match tree {
+            Var(x) => *x,
+            Abs(_, body) => Tree::find_largest_var(body),
+            App(left, right) => {
+                let u = Tree::find_largest_var(left);
+                let v = Tree::find_largest_var(right);
+                max(u, v)
+            }
+        }
+    }
+
+    pub fn rename(&mut self, old : usize, new : usize) {
+        use Tree::*;
+        match self {
+            Var(ref mut x) => {
+                if *x == old { *x = new; }
+            },
+            Abs(ref mut x, body) => {
+                if *x == old { *x = new; }
+                body.rename(old, new);
+            },
+            App(left, right) => {
+                left.rename(old, new);
+                right.rename(old, new);
+            }
+        }
     }
 
     pub fn convert(&self) -> Option<u64> {
