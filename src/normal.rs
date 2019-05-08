@@ -77,7 +77,6 @@ impl Tree {
         let mut result = tree;
         loop {
             result = Tree::reduction_step(result);
-            //println!("{}", result.to_indexed_string());
             if result.is_normal() { break; }
         }
         result
@@ -129,6 +128,6 @@ impl Strategy for Tree {
     }
 
     fn name(&self) -> String {
-        String::from("de bruijn indices normal order")
+        String::from("de bruijn normal")
     }
 }

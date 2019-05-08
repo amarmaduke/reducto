@@ -5,11 +5,13 @@ mod expr;
 mod strategy;
 mod normal;
 mod cek;
+mod hoas;
 
 use crate::tree::Tree;
 use crate::expr::ListFold;
 use crate::strategy::Strategy;
 use crate::cek::Machine;
+use crate::hoas::Hoas;
 
 fn benchmark(strategies : &mut Vec<Box<Strategy>>, depth : usize, len : usize) {
     let mut averages : Vec<_> = strategies.iter().map(|_| 0.0).collect();
@@ -43,12 +45,13 @@ fn benchmark(strategies : &mut Vec<Box<Strategy>>, depth : usize, len : usize) {
     }
 }
 
-fn main() {
+fn helper() {
     let mut strategies : Vec<Box<Strategy>> = vec![];
     strategies.push(Box::new(Tree::Var(0)));
     strategies.push(Box::new(Machine::new()));
+    strategies.push(Box::new(Hoas::new()));
     benchmark(&mut strategies, 1, 1);
-    benchmark(&mut strategies, 1, 3);
+    benchmark(&mut strategies, 1, 2);
     benchmark(&mut strategies, 1, 5);
     benchmark(&mut strategies, 1, 10);
     benchmark(&mut strategies, 1, 15);
@@ -56,4 +59,8 @@ fn main() {
     benchmark(&mut strategies, 2, 3);
     benchmark(&mut strategies, 2, 5);
     benchmark(&mut strategies, 2, 10);
+}
+
+fn main() {
+    helper();
 }
