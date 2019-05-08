@@ -46,6 +46,14 @@ impl ArithExpr {
         }
     }
 
+    pub fn gen_simple() -> ArithExpr {
+        use ArithExpr::*;
+        Op(ArithBinaryOp::Add,
+            Box::new(Numeral(1)),
+            Box::new(Numeral(0)));
+        Numeral(0)
+    }
+
     pub fn elab(&self, id : &mut usize) -> Tree {
         use ArithExpr::*;
         use ArithBinaryOp::*;
@@ -372,6 +380,15 @@ impl ListFold {
             Box::new(VariableExpr::Var2));
         let init = ArithExpr::gen(depth);
         let seq = ListMapSequence::gen(depth, len);
+        ListFold::Fold(op, init, seq)
+    }
+
+    pub fn gen_simple() -> ListFold {
+        let op = VariableExpr::Op(ArithBinaryOp::Add,
+            Box::new(VariableExpr::Var1),
+            Box::new(VariableExpr::Var2));
+        let init = ArithExpr::gen_simple();
+        let seq = ListMapSequence::gen(0, 0);
         ListFold::Fold(op, init, seq)
     }
 

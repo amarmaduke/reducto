@@ -6,18 +6,23 @@ mod strategy;
 mod normal;
 mod cek;
 mod hoas;
+mod optimal;
+mod dag;
 
 use crate::tree::Tree;
-use crate::expr::ListFold;
+use crate::expr::{ListFold, ArithExpr};
 use crate::strategy::Strategy;
 use crate::cek::Machine;
 use crate::hoas::Hoas;
+use crate::optimal::Net;
+use crate::dag::Dag;
 
 fn benchmark(strategies : &mut Vec<Box<Strategy>>, depth : usize, len : usize) {
     let mut averages : Vec<_> = strategies.iter().map(|_| 0.0).collect();
     let (sample, measure) = (3, 3);
     for _ in 0..sample {
         let mut id = 0;
+        let expr = ArithExpr::gen_simple();
         let expr = ListFold::gen(depth, len);
         let value = expr.eval();
         let tree = expr.elab(&mut id);
@@ -50,6 +55,8 @@ fn helper() {
     strategies.push(Box::new(Tree::Var(0)));
     strategies.push(Box::new(Machine::new()));
     strategies.push(Box::new(Hoas::new()));
+    //strategies.push(Box::new(Net::new()));
+    //strategies.push(Box::new(Dag::new()));
     benchmark(&mut strategies, 1, 1);
     benchmark(&mut strategies, 1, 2);
     benchmark(&mut strategies, 1, 5);
